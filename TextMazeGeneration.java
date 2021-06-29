@@ -16,131 +16,32 @@ public class TextMazeGeneration {
 		return (int) (Math.random()*maximum);
 	}
 	
-	public static ArrayList<Point> generateInitialPoints(int R, int C){
-		ArrayList<Point> list = new ArrayList<Point>();
-		
-		for(int i = 0; i < R; i++){
-			for(int j = 0; j < C; j++){
-				int random_perm = generateRandomInt(16);
-				list.add(new Point(0, 0, random_perm, 0));
-			}
+	public static Coordinate giveNeighbor(Coordinate curr_cord, int curr_wall){
+		return new Coordinate(curr_cord.getX() + dx[curr_wall], curr_cord.getY() + dy[curr_wall]);
+	}
+	
+	public static Coordinate findRandNeighbor(DisjointSet ds, Coordinate cord){
+		int current_wall = generateRandomInt(4);
+		Coordinate cord_head = ds.find(cord);
+		Coordinate neighbor_head, neighbor;
+		while(cord_head.equals(neighbor_head = ds.find(neighbor = giveNeighbor(cord, current_wall)))){
+			current_wall = (current_wall + 1) % 4;
 		}
-		
-		return list;
-	}
-	
-	public static int getAcrossWallInd(int wall_ind){
-		return (wall_ind + 2) % 4;
-	}
-	
-	public static int[] createIntArray(int[] arr){
-		int[] arr2 = new int[4];
-		arr2[0] = arr[0];
-		arr2[1] = arr[1];
-		arr2[2] = arr[2];
-		arr2[3] = arr[3];
-		return arr2;
-	}
-	
-	public static int[][] generatePermutations(){
-		int[][] p = new int[16][4];
-		
-		// just for now
-		for(int i = 0; i < 16; i++){
-			for(int j = 0; j < 4; j++){
-				p[i][j] = j;
-			}
-		}
-		
-		return p;
-	}
-	
-	public static Coordinate getNeighbor(Coordinate cord, int wall_ind){
-		return new Coordinate(cord.getX() + dx[wall_ind], cord.getY() + dy[wall_ind]);
-	}
-	
-	public static Coordinate find(Ds[][] disjoint_set, Coordinate cord){
-		int x = cord.getX(), y = cord.getY();
-		Coordinate parent = disjoint_set[x][y].parent;
-		
-		if(parent == null){
-			return new Coordinate(x, y);
-		}
-		
-		return find(disjoint_set, parent);
-	}
-	
-	public static boolean isLarger(Coordinate head1, Coordinate head2, Ds[][] disjoint_set){
-		return disjoint_set[head1.getX()][head1.getY()].size < disjoint_set[head2.getX()][head2.getY()].size;
-	}
-	
-	public static int findNewSize(Coordinate head1, Coordinate head2, Ds[][] disjoint_set){
-		return disjoint_set[head1.getX()][head1.getY()].size + disjoint_set[head2.getX()][head2.getY()].size;
-	}
-	
-	public static Ds[][] union(Coordinate head1, Coordinate head2, Ds[][] disjoint_set){
-		int head1_x = head1.getX(), head1_y = head1.getY(), head2_x = head2.getX(), head2_y = head2.getY();
-		int new_size = findNewSize(head1, head2, disjoint_set);
-		
-		if(isLarger(head1, head2, disjoint_set)){
-			disjoint_set[head1_x][head1_y].size = new_size;
-			disjoint_set[head2_x][head2_y].parent = head1;
-		}else{
-			disjoint_set[head2_x][head2_y].size = new_size;
-			disjoint_set[head1_x][head1_y].parent = head2;
-		}
-		
-		return disjoint_set;
+		return neighbor;
 	}
 	
 	public static boolean[][][] createMaze(int R, int C){
-		boolean[][][] wall = new boolean[R][C][4];
+		Walls walls = new Walls(R, C);
+		DisjointSet ds = new DisjointSet(R, C);
 		
-		int[][] permutation = generatePermutations();
-		
-		ArrayList<Point> initial_list = generateInitialPoints(R, C);
-		Ds[][] disjoint_set = new Ds[R][C];
-		int num_sets = R*C;
-		
-		while(num_sets > 1 && initial_list.size() > 0){
-			// Get current point
-			int point_ind = generateRandomInt(initial_list.size());
-			Point curr_point = initial_list.get(point_ind);
-			initial_list.remove(point_ind);
-			
-
-			Coordinate cord = curr_point.getCord();
-			int ind = curr_point.getInd();
-			int perm_ind = curr_point.getPermInd();
-			
-			Coordinate head1, head2, neighbor;
-			do{
-				int wall_ind = permutation[ind][perm_ind];
-				neighbor = getNeighbor(cord, wall_ind);
-				head1 = find(disjoint_set, cord);
-				head2 = find(disjoint_set, neighbor);
-				perm_ind += 1;
-			}while(head1.equals(head2) && perm_ind < 4);
-			
-			if(perm_ind < 4){
-				disjoint_set = union(head1, head2, disjoint_set);
-				
-				int wall_ind = permutation[ind][perm_ind];
-				int other_wall_ind = getAcrossWallInd(wall_ind);
-				
-				wall[cord.getX()][cord.getY()][wall_ind] = true;
-				wall[neighbor.getX()][neighbor.getY()][other_wall_ind] = true;
-				
-				if(ind != 3){
-					curr_point.setInd(ind+1);
-					initial_list.add(curr_point);
-				}
-				
-				num_sets--;
-			}
+		while(ds.numSets() > 1){
+			Coordinate rand_cord = walls.giveRandCord();
+			Coordinate rand_neighbor = findRandNeighbor(ds, rand_cord);
+			ds.union(rand_cord, rand_neighbor);
+			walls.knockDown(rand_cord, rand_neighbor, dx, dy);
 		}
 		
-		return wall;
+		return walls.getArray();
 	}
 	
 	public static boolean inRange(int start_x, int start_y, char[][] grid){
@@ -217,60 +118,171 @@ public class TextMazeGeneration {
 		int R = in.nextInt();
 		int C = in.nextInt();
 		
-		boolean[][][] wall = createMaze(R, C);
+		DisjointSet ds = new DisjointSet(R, C);
+		Coordinate first = new Coordinate(1, 2);
+		Coordinate second = new Coordinate(3, 1);
+		Coordinate head = ds.find(first);
+		System.out.println(head);
+		/*boolean[][][] wall = createMaze(R, C);
 		char[][] grid = buildMaze(R, C, wall);
-		printMaze(grid);
+		printMaze(grid);*/
 	}
 	
 }
 
-class Ds{
-	static Coordinate parent;
-	static int size;
+// Everything in Walls is confirmed to work
+class Walls{
+	boolean[][][] wall;
+	int[][] num_neighbors;
+	int num_rows, num_cols;
 	
-	Ds(){
-		parent = null;
-		size = -1;
+	Walls(int R, int C){
+		num_rows = R;
+		num_cols = C;
+		wall = new boolean[R][C][4];
+		num_neighbors = new int[R][C];
+		for(int i = 0; i < R; i++){
+			for(int j = 0; j < C; j++){
+				num_neighbors[i][j] = 4;
+				for(int k = 0; k < 4; k++) wall[i][j][k] = true;
+			}
+		}
+	}
+	
+	int randomInt(int maximum){
+		return (int) (Math.random()*maximum);
+	}
+	
+	int findWallIndex(Coordinate one, Coordinate two, int[] dx, int[] dy){
+		int curr_dx = two.getX() - one.getX();
+		int curr_dy = two.getY() - one.getY();
+		
+		for(int i = 0; i < 4; i++){
+			if(dx[i] == curr_dx && dy[i] == curr_dy) return i;
+		}
+		
+		return -1;
+	}
+	
+	void knockDown(Coordinate one, Coordinate two, int[] dx, int[] dy){
+		int one_x = one.getX(), one_y = one.getY();
+		int two_x = two.getX(), two_y = two.getY();
+				
+		int ones_wall_ind = findWallIndex(one, two, dx, dy);
+		int twos_wall_ind = findWallIndex(two, one, dx, dy);
+		
+		wall[one_x][one_y][ones_wall_ind] = false;
+		wall[two_x][two_y][twos_wall_ind] = false;
+	}
+	
+	Coordinate giveRandCord(){
+		int x, y;
+		while(num_neighbors[x=randomInt(num_rows)][y=randomInt(num_cols)] == 0){}
+		num_neighbors[x][y]--;
+		return new Coordinate(x, y);
+	}
+	
+	boolean[][][] getArray(){
+		return wall;
+	}
+	
+	void print(){
+		for(int i = 0; i < num_rows; i++){
+			for(int j = 0; j < num_cols; j++){
+				System.out.println("At: (" +  i + ", " + j + "): " + wall[i][j][0] + " " + wall[i][j][1] + " " + wall[i][j][2] + " " + wall[i][j][3]);
+			}
+		}
+	}
+}
+
+class DS_obj{
+	private Coordinate parent = null;
+	private int size = -1;
+	
+	DS_obj(Coordinate p, int s){
+		p = parent;
+		size = s;
+	}
+	
+	Coordinate getParent(){
+		return parent;
+	}
+	
+	void setParent(Coordinate p){
+		parent = p;
+	}
+	
+	void setSize(int new_size){
+		size = new_size;
+	}
+	
+	int getSize(){
+		return size;
+	}
+}
+
+class DisjointSet{
+	private DS_obj[][] info;
+	private int num_sets;
+	
+	DisjointSet(int R, int C){
+		info = new DS_obj[R][C];
+		num_sets = R*C;
+	}
+	
+	int numSets(){
+		return num_sets;
+	}
+	
+	Coordinate find(Coordinate given){
+		while(info[given.getX()][given.getY()].getParent() != null){
+			given = info[given.getX()][given.getY()].getParent();
+		}
+		return given;
+	}
+	
+	void union(Coordinate one, Coordinate two){
+		Coordinate head1 = find(one);
+		Coordinate head2 = find(two);
+		
+		DS_obj first = info[head1.getX()][head1.getY()];
+		DS_obj second = info[head2.getX()][head2.getY()];
+		int new_size = first.getSize() + second.getSize();
+		
+		if(first.getSize() < second.getSize()){
+			info[head2.getX()][head2.getY()].setParent(head1);
+			info[head2.getX()][head2.getY()].setSize(new_size);
+		}else{
+			info[head1.getX()][head1.getY()].setParent(head2);
+			info[head2.getX()][head2.getY()].setSize(new_size);
+		}
+		
+		num_sets--;
 	}
 }
 
 class Coordinate{
-	private static int x, y;
+	private int x, y;
 	
-	Coordinate(int x, int y){
-		this.x = x;
-		this.y = y;
+	Coordinate(int given_x, int given_y){
+		x = given_x;
+		y = given_y;
 	}
 	
-	public static int getX(){
+	public int getX(){
 		return x;
 	}
 	
-	public static int getY(){
+	public int getY(){
 		return y;
 	}
-}
-
-class Point{
-	private static Coordinate cord;
-	private static int ind, perm_index;
 	
-	Point(int x, int y, int ind, int permIndex){
-		this.cord = new Coordinate(x, y);
-		this.ind = ind;
-		this.perm_index = permIndex;
+    public boolean equals(Coordinate c) {
+		return c.getX() == x && c.getY() == y;
 	}
-	
-	void setInd(int new_ind){ ind = new_ind; }
-	
-	int getPermInd(){ return perm_index; }
-	
-	int getInd(){ return ind; }
-	
-	Coordinate getCord(){ return cord; }
-	
-	int getX(){ return cord.getX(); }
-	
-	int getY(){ return cord.getY(); }
-};
+    
+    public String toString(){
+    	return "(" + x + ", " + y + ")";
+    }
+}
 
