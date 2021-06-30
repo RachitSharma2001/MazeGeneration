@@ -16,29 +16,48 @@ public class TextMazeGeneration {
 		return (int) (Math.random()*maximum);
 	}
 	
+	// Works
 	public static Coordinate giveNeighbor(Coordinate curr_cord, int curr_wall){
 		return new Coordinate(curr_cord.getX() + dx[curr_wall], curr_cord.getY() + dy[curr_wall]);
 	}
 	
-	public static Coordinate findRandNeighbor(DisjointSet ds, Coordinate cord){
-		int current_wall = generateRandomInt(4);
+	public static Coordinate findRandNeighbor(DisjointSet ds, Coordinate cord, int R, int C){
 		Coordinate cord_head = ds.find(cord);
 		Coordinate neighbor_head, neighbor;
-		while(cord_head.equals(neighbor_head = ds.find(neighbor = giveNeighbor(cord, current_wall)))){
-			current_wall = (current_wall + 1) % 4;
+		
+		int num_neighbors = 0;
+		for(int i = 0; i < 4; i++){
+			Coordinate n = giveNeighbor(cord, i);
+			if(n.inBounds(R, C) && !ds.find(n).isSame(cord_head)){
+				num_neighbors++;
+			}
 		}
+		if(num_neighbors == 0) return null;
+		do{
+			int current_wall = generateRandomInt(4);
+			neighbor_head = ds.find(neighbor = giveNeighbor(cord, current_wall)); 
+			/*System.out.println("Current wall: " + current_wall + ", Neighbor: " + neighbor 
+					+ ", Neighbor head: " + neighbor_head + " with coordinate: " 
+					+ cord + " which has head: " + cord_head);*/
+		}while(neighbor_head == null || cord_head.isSame(neighbor_head));
+		
 		return neighbor;
 	}
 	
 	public static boolean[][][] createMaze(int R, int C){
-		Walls walls = new Walls(R, C);
 		DisjointSet ds = new DisjointSet(R, C);
+		Walls walls = new Walls(R, C, dx, dy);
 		
+		int num_sets = R*C;
 		while(ds.numSets() > 1){
+			//System.out.println("The number of sets: " + ds.numSets() + " # of iterations: " + num_sets);
 			Coordinate rand_cord = walls.giveRandCord();
-			Coordinate rand_neighbor = findRandNeighbor(ds, rand_cord);
+			//System.out.println("Random cord: " + rand_cord + " with num neighbors: " + walls.findNumNeighbors(rand_cord));
+			Coordinate rand_neighbor = findRandNeighbor(ds, rand_cord, R, C);
+			if(rand_neighbor == null) continue;
 			ds.union(rand_cord, rand_neighbor);
 			walls.knockDown(rand_cord, rand_neighbor, dx, dy);
+			num_sets--;
 		}
 		
 		return walls.getArray();
@@ -91,7 +110,7 @@ public class TextMazeGeneration {
 					int x = i/2;
 					int y = (j-1)/2;
 					
-					if(wall[x][y][d_ind]) { grid[i][j] = WALL; }
+					if(!wall[x][y][d_ind]) { grid[i][j] = WALL; }
 					else { grid[i][j] = SPACE; }
 				}else{
 					grid[i][j] = SPACE;
@@ -100,6 +119,7 @@ public class TextMazeGeneration {
 		}
 		
 		grid[0][1] = SPACE;
+		grid[newR-1][newC-2] = SPACE;
 		
 		return grid;
  	}
@@ -118,14 +138,9 @@ public class TextMazeGeneration {
 		int R = in.nextInt();
 		int C = in.nextInt();
 		
-		DisjointSet ds = new DisjointSet(R, C);
-		Coordinate first = new Coordinate(1, 2);
-		Coordinate second = new Coordinate(3, 1);
-		Coordinate head = ds.find(first);
-		System.out.println(head);
-		/*boolean[][][] wall = createMaze(R, C);
+		boolean[][][] wall = createMaze(R, C);
 		char[][] grid = buildMaze(R, C, wall);
-		printMaze(grid);*/
+		printMaze(grid);
 	}
 	
 }
@@ -136,15 +151,26 @@ class Walls{
 	int[][] num_neighbors;
 	int num_rows, num_cols;
 	
-	Walls(int R, int C){
+	boolean inBounds(int x, int y, int dx, int dy, int R, int C){
+		int new_x = x + dx, new_y = y + dy;
+		return !(new_x < 0 || new_x >= R || new_y < 0 || new_y >= C);
+	}
+	
+	Walls(int R, int C, int[] dx, int[] dy){
 		num_rows = R;
 		num_cols = C;
 		wall = new boolean[R][C][4];
 		num_neighbors = new int[R][C];
 		for(int i = 0; i < R; i++){
 			for(int j = 0; j < C; j++){
-				num_neighbors[i][j] = 4;
-				for(int k = 0; k < 4; k++) wall[i][j][k] = true;
+				for(int k = 0; k < 4; k++){
+					if(!inBounds(i, j, dx[k], dy[k], R, C)){ 
+						wall[i][j][k] = false;
+						continue;
+					}
+					wall[i][j][k] = true;
+					num_neighbors[i][j]++;
+				}
 			}
 		}
 	}
@@ -173,12 +199,15 @@ class Walls{
 		
 		wall[one_x][one_y][ones_wall_ind] = false;
 		wall[two_x][two_y][twos_wall_ind] = false;
+		
+		num_neighbors[one_x][one_y] -= 1;
+		num_neighbors[two_x][two_y] -= 1;
 	}
 	
 	Coordinate giveRandCord(){
 		int x, y;
 		while(num_neighbors[x=randomInt(num_rows)][y=randomInt(num_cols)] == 0){}
-		num_neighbors[x][y]--;
+		//num_neighbors[x][y]--;
 		return new Coordinate(x, y);
 	}
 	
@@ -193,11 +222,19 @@ class Walls{
 			}
 		}
 	}
+	
+	int findNumNeighbors(int x, int y){
+		return num_neighbors[x][y];
+	}
+	
+	int findNumNeighbors(Coordinate c){
+		return num_neighbors[c.getX()][c.getY()];
+	}
 }
 
 class DS_obj{
-	private Coordinate parent = null;
-	private int size = -1;
+	private Coordinate parent;
+	private int size;
 	
 	DS_obj(Coordinate p, int s){
 		p = parent;
@@ -227,6 +264,11 @@ class DisjointSet{
 	
 	DisjointSet(int R, int C){
 		info = new DS_obj[R][C];
+		for(int i = 0; i < R; i++){
+			for(int j = 0; j < C; j++){
+				info[i][j] = new DS_obj(null, -1);
+			}
+		}
 		num_sets = R*C;
 	}
 	
@@ -235,15 +277,28 @@ class DisjointSet{
 	}
 	
 	Coordinate find(Coordinate given){
+		if(!given.inBounds(info.length, info[0].length)){
+			//System.out.println("Returning null because " + given + " is out of bounds");
+			return null;
+		}
+		
 		while(info[given.getX()][given.getY()].getParent() != null){
+			//System.out.println("Given: " + given);
+			//System.out.println("Size: " + info[given.getX()][given.getY()].getSize());
 			given = info[given.getX()][given.getY()].getParent();
 		}
 		return given;
 	}
 	
 	void union(Coordinate one, Coordinate two){
+		//System.out.println("Unioning " + one + " with " + two);
 		Coordinate head1 = find(one);
 		Coordinate head2 = find(two);
+		
+		if(head1.isSame(head2)){
+			System.out.println("Error: Trying to union two coordinates that are in the same set");
+			return;
+		}
 		
 		DS_obj first = info[head1.getX()][head1.getY()];
 		DS_obj second = info[head2.getX()][head2.getY()];
@@ -251,7 +306,7 @@ class DisjointSet{
 		
 		if(first.getSize() < second.getSize()){
 			info[head2.getX()][head2.getY()].setParent(head1);
-			info[head2.getX()][head2.getY()].setSize(new_size);
+			info[head1.getX()][head1.getY()].setSize(new_size);
 		}else{
 			info[head1.getX()][head1.getY()].setParent(head2);
 			info[head2.getX()][head2.getY()].setSize(new_size);
@@ -277,9 +332,13 @@ class Coordinate{
 		return y;
 	}
 	
-    public boolean equals(Coordinate c) {
-		return c.getX() == x && c.getY() == y;
+    public boolean isSame(Coordinate c) {
+		return c != null && c.getX() == x && c.getY() == y;
 	}
+    
+    public boolean inBounds(int limit1, int limit2){
+    	return !(x < 0 || x >= limit1 || y < 0 || y >= limit2);
+    }
     
     public String toString(){
     	return "(" + x + ", " + y + ")";
