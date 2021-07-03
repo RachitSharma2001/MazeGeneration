@@ -36,9 +36,6 @@ public class TextMazeGeneration {
 		do{
 			int current_wall = generateRandomInt(4);
 			neighbor_head = ds.find(neighbor = giveNeighbor(cord, current_wall)); 
-			/*System.out.println("Current wall: " + current_wall + ", Neighbor: " + neighbor 
-					+ ", Neighbor head: " + neighbor_head + " with coordinate: " 
-					+ cord + " which has head: " + cord_head);*/
 		}while(neighbor_head == null || cord_head.isSame(neighbor_head));
 		
 		return neighbor;
@@ -50,9 +47,7 @@ public class TextMazeGeneration {
 		
 		int num_sets = R*C;
 		while(ds.numSets() > 1){
-			//System.out.println("The number of sets: " + ds.numSets() + " # of iterations: " + num_sets);
 			Coordinate rand_cord = walls.giveRandCord();
-			//System.out.println("Random cord: " + rand_cord + " with num neighbors: " + walls.findNumNeighbors(rand_cord));
 			Coordinate rand_neighbor = findRandNeighbor(ds, rand_cord, R, C);
 			if(rand_neighbor == null) continue;
 			ds.union(rand_cord, rand_neighbor);
@@ -80,7 +75,7 @@ public class TextMazeGeneration {
 	public static char[][] buildBorders(char[][] grid){
 		int R = grid.length;
 		int C = grid[0].length;
-		
+				
 		// Make first column all '|'
 		grid = makeAllChar(0, 0, down, WALL, grid);
 		
@@ -101,19 +96,22 @@ public class TextMazeGeneration {
 		int newR = 2*R+1;
 		int newC = 2*C+1;
 		
-		grid = buildBorders(grid);
-		for(int i = 1; i < newR-1; i++){
-			int d_ind = (isEven(i) ? down : right);
-			for(int j = 1; j < newC-1; j++){
-				// Do later: grid[i][j] = decideChar()
-				if(isEven(i) || isEven(j)){
-					int x = i/2;
-					int y = (j-1)/2;
-					
-					if(!wall[x][y][d_ind]) { grid[i][j] = WALL; }
-					else { grid[i][j] = SPACE; }
-				}else{
-					grid[i][j] = SPACE;
+		// Fill Everything with walls
+		for(int i = 0; i < newR; i++)
+			for(int j = 0; j < newC; j++)
+				grid[i][j] = WALL;
+
+		// Fill in spaces 
+		for(int maze_x = 0; maze_x < R; maze_x++){
+			for(int maze_y = 0; maze_y < C; maze_y++){
+				int array_x = 1 + maze_x*2;
+				int array_y = 1 + maze_y*2;
+				grid[array_x][array_y] = SPACE;
+				if(!wall[maze_x][maze_y][right]){
+					grid[array_x][array_y+1] = SPACE;
+				}
+				if(!wall[maze_x][maze_y][down]){
+					grid[array_x+1][array_y] = SPACE;
 				}
 			}
 		}
@@ -164,10 +162,10 @@ class Walls{
 		for(int i = 0; i < R; i++){
 			for(int j = 0; j < C; j++){
 				for(int k = 0; k < 4; k++){
-					if(!inBounds(i, j, dx[k], dy[k], R, C)){ 
+					/*if(!inBounds(i, j, dx[k], dy[k], R, C)){ 
 						wall[i][j][k] = false;
 						continue;
-					}
+					}*/
 					wall[i][j][k] = true;
 					num_neighbors[i][j]++;
 				}
