@@ -3,34 +3,16 @@ import java.util.Scanner;
 
 
 public class TextMazeGeneration_BetterOOP {
-	static void printTest(Grid g, int id){
-		System.out.println("Coordinate of " + id + ": (" + (g.getRow(id)-1)/2 + ", " + (g.getCol(id)-1)/2 + ")");
-	}
 	public static void main(String[] args){
 		Scanner in = new Scanner(System.in);
 		int R = in.nextInt();
 		int C = in.nextInt();
 		
-		/*Maze maze = new Maze(R, C);
+		Maze maze = new Maze(R, C);
 		maze.generateMaze();
-		maze.print();*/
+		maze.print();
 		
-		Grid grid = new Grid(R, C);
-		printTest(grid, 3);
-		printTest(grid, 10);
-		printTest(grid, 15);
-		printTest(grid, 17);
-		grid.knockDownWall(3, 4);
-		grid.print();
-		System.out.println();
-		System.out.println();
-		grid.knockDownWall(10, 10+C);
-		grid.print();
-		System.out.println();
-		System.out.println();
-		grid.knockDownWall(15, 16);
-		grid.print();
-		
+		in.close();
 	}
 }
 
@@ -42,7 +24,7 @@ class Maze{
 	Maze(int R, int C){
 		walls = new Walls(R, C);
 		grid = new Grid(R, C);
-		
+		ds = new DisjointSet(R, C);
 	}
 	
 	void print(){
@@ -68,10 +50,11 @@ class Walls{
 	
 	Walls(int R, int C){
 		int id_count = 0;
-		for(int row = 1; row < R; row++){
-			for(int col = 1; col < C; col++){
-				walls_list.add(new WallObj(id_count-1, id_count));
-				walls_list.add(new WallObj(id_count-C, id_count));
+		walls_list = new ArrayList<WallObj>();
+		for(int row = 0; row < R; row++){
+			for(int col = 0; col < C; col++){
+				if(col != 0) walls_list.add(new WallObj(id_count-1, id_count));
+				if(row != 0) walls_list.add(new WallObj(id_count-C, id_count));
 				id_count++;
 			}
 		}
@@ -139,7 +122,7 @@ class Grid{
 	}
 	
 	int getRow(int id){
-		return 1 + 2*(id/R);
+		return 1 + 2*(id/C);
 	}
 	
 	int getCol(int id){
