@@ -3,8 +3,8 @@ import java.util.Scanner;
 
 
 public class TextMazeGeneration_BetterOOP {
-	static void printTest(DisjointSet ds, int one){
-		System.out.println("The head of " + one + ": " + ds.find(one));
+	static void printTest(Grid g, int id){
+		System.out.println("Coordinate of " + id + ": (" + (g.getRow(id)-1)/2 + ", " + (g.getCol(id)-1)/2 + ")");
 	}
 	public static void main(String[] args){
 		Scanner in = new Scanner(System.in);
@@ -14,41 +14,23 @@ public class TextMazeGeneration_BetterOOP {
 		/*Maze maze = new Maze(R, C);
 		maze.generateMaze();
 		maze.print();*/
-		DisjointSet ds = new DisjointSet(R, C);
 		
-		ds.union(9, 3);
-		printTest(ds, 3);
-		printTest(ds, 9);
-		System.out.println("----------------");
+		Grid grid = new Grid(R, C);
+		printTest(grid, 3);
+		printTest(grid, 10);
+		printTest(grid, 15);
+		printTest(grid, 17);
+		grid.knockDownWall(3, 4);
+		grid.print();
+		System.out.println();
+		System.out.println();
+		grid.knockDownWall(10, 10+C);
+		grid.print();
+		System.out.println();
+		System.out.println();
+		grid.knockDownWall(15, 16);
+		grid.print();
 		
-		ds.union(5, 9);
-		printTest(ds, 3);
-		printTest(ds, 9);
-		printTest(ds, 5);
-		System.out.println("----------------");
-		
-		ds.union(1, 2);
-		printTest(ds, 1);
-		printTest(ds, 2);
-		System.out.println("----------------");
-
-		ds.union(6, 7);
-		printTest(ds, 6);
-		printTest(ds, 7);
-		System.out.println("----------------");
-
-		ds.union(0, 1);
-		printTest(ds, 0);
-		printTest(ds, 1);
-		printTest(ds, 2);
-		System.out.println("----------------");
-		ds.union(1, 6);
-		printTest(ds, 0);
-		printTest(ds, 1);
-		printTest(ds, 2);
-		printTest(ds, 6);
-		printTest(ds, 7);
-		System.out.println("----------------");
 	}
 }
 
@@ -80,6 +62,7 @@ class Maze{
 	}
 }
 
+// Eventually I want to remove the array list and have just the priority queues
 class Walls{
 	private ArrayList<WallObj> walls_list;
 	
@@ -135,12 +118,14 @@ class Grid{
 		for(int i = 0; i < grid.length; i++){
 			for(int j = 0; j < grid[0].length; j++){
 				if(isEven(i*j)){
-					grid[i][j] = SPACE;
-				}else{
 					grid[i][j] = WALL;
+				}else{
+					grid[i][j] = SPACE;
 				}
 			}
 		}
+		grid[0][1] = SPACE;
+		grid[2*R][2*C-1] = SPACE;
 	}
 	
 	void knockDownWall(int first_id, int second_id){
@@ -154,11 +139,11 @@ class Grid{
 	}
 	
 	int getRow(int id){
-		return id / R;
+		return 1 + 2*(id/R);
 	}
 	
 	int getCol(int id){
-		return id % C;
+		return 1 + 2*(id%C);
 	}
 	
 	boolean isRight(int first_id, int second_id){
