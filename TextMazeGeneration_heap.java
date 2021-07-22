@@ -5,12 +5,12 @@ import java.util.Scanner;
 
 public class TextMazeGeneration_BetterOOP {
 	
-	public static void printWallObj(WallObj given){
-		System.out.println("Wall Objects value: " + given.getIndex());
-	}
+	/*public static void printWallObj(WallObj given){
+		System.out.println("Ids and index: " + given.first_id + " " + given.second_id + " value: " + given.getIndex());
+	}*/
 	
 	public static void main(String[] args){
-		/*Scanner in = new Scanner(System.in);
+		Scanner in = new Scanner(System.in);
 		int R = in.nextInt();
 		int C = in.nextInt();
 		
@@ -18,23 +18,52 @@ public class TextMazeGeneration_BetterOOP {
 		maze.generateMaze();
 		maze.print();
 		
-		in.close();*/
+		in.close();
+		
+		/* Test 1
+		PriorityQueue<WallObj> queue = new PriorityQueue<WallObj>();
+		WallObj one = new WallObj(3, 3);
+		WallObj two = new WallObj(5, 5);
+		WallObj three = new WallObj(1, 1);
+		WallObj four = new WallObj(2, 3);
+		WallObj five = new WallObj(9, 4);
+		WallObj six = new WallObj(1, 4);
+		WallObj seven = new WallObj(4, 4);
+		queue.add(one);
+		queue.add(two);
+		queue.add(three);
+		queue.add(four);
+		queue.add(five);
+		queue.add(six);
+		queue.add(seven);
+		
+		while(!queue.isEmpty()){
+			printWallObj(queue.poll());
+		}*/
+		
+		/* Test 2:
+		PriorityQueue<WallObj> queue = new PriorityQueue<WallObj>();
 		
 		for(int i = 0; i < 1000; i++){
-			WallObj one = new WallObj(5, 5);
-			WallObj two = new WallObj(9, 9);
-			if(one.getIndex() < two.getIndex() && one.compareTo(two) != -1){
-				System.out.println("We have a problem: ");
-				printWallObj(one);
-				printWallObj(two);
-				System.out.println(one.compareTo(two));
-			}else if(one.getIndex() >= two.getIndex() && one.compareTo(two) != 1){
-				System.out.println("We have a problem: ");
-				printWallObj(one);
-				printWallObj(two);
-				System.out.println(one.compareTo(two));
-			}
+			WallObj another = new WallObj(i, i);
+			queue.add(another);
 		}
+		
+		int last_value = 0;
+		while(!queue.isEmpty()){
+			int new_val = queue.poll().getIndex();
+			if(new_val < last_value){
+				System.out.println("Error: " + new_val + " " + last_value);
+			}
+			last_value = new_val;
+		}
+		System.out.println("Done");*/
+
+		/* Test 3 
+		Walls wall = new Walls(5, 5);
+		while(!wall.noneLeft()){
+			printWallObj(wall.giveRandomWall());
+		}*/
 	}
 }
 
@@ -67,7 +96,6 @@ class Maze{
 }
 
 class Walls{
-	//private ArrayList<WallObj> walls_list;
 	private PriorityQueue<WallObj> walls_list;
 	
 	Walls(int R, int C){
@@ -82,12 +110,8 @@ class Walls{
 		}
 	}
 	
+	// give and remove the top of the binary heap (its sorted in random order)
 	WallObj giveRandomWall(){
-		/*int rand_ind = Random.giveRandInt(0, walls_list.size() - 1);
-		WallObj deleted_wall = walls_list.get(rand_ind);
-		walls_list.remove(rand_ind);
-		return deleted_wall;*/
-		// give and remove the top of the binary heap (its sorted in random order)
 		return walls_list.poll();
 	}
 	
@@ -102,9 +126,7 @@ class WallObj implements Comparable<WallObj>{
 	WallObj(int f_id, int s_id){
 		first_id = f_id;
 		second_id = s_id;
-		// Generate random value
 		index = (int) (Math.random() * Integer.MAX_VALUE);
-		//System.out.println("Value for this wall object: " + index);
 	}
 	
 	int getFirstId(){
